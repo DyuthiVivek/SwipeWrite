@@ -24,16 +24,16 @@ class handTracker():
                     self.mpDraw.draw_landmarks(image, handLms, self.mpHands.HAND_CONNECTIONS)
         return image
     
-    def positionFinder(self,image, handNo=0, draw=True):
-        lmlist = []
+    def positionFinder(self,image, handNo=0, draw=True, finger_no=8):
+        lmlist = {}
         if self.results.multi_hand_landmarks:
             Hand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(Hand.landmark):
                 h,w,c = image.shape
                 cx,cy = int(lm.x*w), int(lm.y*h)
-                lmlist.append([id,cx,cy])
+                lmlist[id] = (cx,cy)
             if draw:
-                cv2.circle(image,(cx,cy), 15 , (255,0,255), cv2.FILLED)
+                cv2.circle(image,lmlist[8], 15 , (255,0,255), cv2.FILLED)
 
         return lmlist
     
@@ -43,6 +43,7 @@ def main():
 
     while True:
         success,image = cap.read()
+        image = cv2.flip(image,1)
         image = tracker.handsFinder(image)
         lmList = tracker.positionFinder(image)
         if len(lmList) != 0:
