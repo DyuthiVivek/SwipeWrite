@@ -27,13 +27,28 @@ class handTracker():
     def positionFinder(self,image, handNo=0, draw=True, finger_no=8):
         lmlist = {}
         if self.results.multi_hand_landmarks:
+            x_= str(self.results.multi_hand_landmarks[-1].landmark[8]).split('\n')[0]
+            y_= str(self.results.multi_hand_landmarks[-1].landmark[8]).split('\n')[1]
+            z_= str(self.results.multi_hand_landmarks[-1].landmark[8]).split('\n')[2]
+
+            x = float(x_.split(" ")[1])
+            y = float(y_.split(" ")[1])
+            z = float(z_.split(" ")[1])
+
+            height = image.shape[0]
+            width = image.shape[1]
+            x_real = x * width
+            y_real = y * height
+
+            print(x_real, y_real)
+
             Hand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(Hand.landmark):
                 h,w,c = image.shape
                 cx,cy = int(lm.x*w), int(lm.y*h)
                 lmlist[id] = (cx,cy)
             if draw:
-                cv2.circle(image,lmlist[8], 15 , (255,0,255), cv2.FILLED)
+                cv2.circle(image,lmlist[finger_no], 15 , (255,0,255), cv2.FILLED)
 
         return lmlist
     
@@ -41,14 +56,13 @@ def main():
     cap = cv2.VideoCapture(0)
     tracker = handTracker()
 
-    while True:
+    while cap.isOpened():
         success,image = cap.read()
         image = cv2.flip(image,1)
         image = tracker.handsFinder(image)
         lmList = tracker.positionFinder(image)
         if len(lmList) != 0:
             print(lmList[4])
-
         cv2.imshow("Video",image)
         cv2.waitKey(1)
 if __name__ == "__main__":
