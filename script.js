@@ -1,4 +1,3 @@
-// You can call the draw function with the coordinates received from the server
 var socket = io.connect('http://' + document.domain + ':' + location.port);
 
         // Handle incoming video frames
@@ -6,6 +5,19 @@ var socket = io.connect('http://' + document.domain + ':' + location.port);
             var img = document.getElementById('video_feed');
             img.src = 'data:image/jpeg;base64,' + data.image;
             console.log(data.coordinates, data.draw);
+            // Start drawing based on server-sent data
+            if (data.draw) {
+            // Enable drawing based on the condition received from the server
+                isDrawing = true;
+            } else {
+            // Disable drawing
+                isDrawing = false;
+            }
+
+            // Update drawing coordinates if provided by the server
+            if (data.coordinates) {
+                [lastX, lastY] = data.coordinates;
+            }
         });
 
         const canvas = document.createElement("canvas");
@@ -74,10 +86,10 @@ var socket = io.connect('http://' + document.domain + ':' + location.port);
 
         function draw(e) {
             if (!isDrawing) return;
-
+        
             ctx.lineWidth = 2;
             ctx.lineCap = "round";
-
+        
             if (isErasing) {
                 ctx.clearRect(e.offsetX - 10, e.offsetY - 10, 20, 20);
             } else if (isDrawingRectangle) {
@@ -94,6 +106,8 @@ var socket = io.connect('http://' + document.domain + ':' + location.port);
                 ctx.moveTo(lastX, lastY);
                 ctx.lineTo(e.offsetX, e.offsetY);
                 ctx.stroke();
-                [lastX, lastY] = [e.offsetX, e.offsetY];
+                // Update lastX and lastY based on the current drawing position
+                lastX = e.offsetX;
+                lastY = e.offsetY;
             }
-        }const canvas = document.getElementById("paintCanvas");
+        }
