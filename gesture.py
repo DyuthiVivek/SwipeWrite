@@ -1,38 +1,39 @@
-import cv2
-import mediapipe as mp
-import sys
+from math import dist
 
-BaseOptions = mp.tasks.BaseOptions
-GestureRecognizer = mp.tasks.vision.GestureRecognizer
-GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
-VisionRunningMode = mp.tasks.vision.RunningMode
+def coordinate(results, landmark, num):
+    return float(str(results.multi_hand_landmarks[-1].landmark[landmark]).split('\n')[num].split(" ")[1])
 
-def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
-    print('gesture recognition result: {}'.format(result))
-    
-options = GestureRecognizerOptions(
-    base_options=BaseOptions(model_asset_path='/home/dyuthi/SwipeWrite/gesture_recognizer.task'),
-    running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=print_result)
+def is_closed(results):
+    if results.multi_hand_landmarks is not None:
+        try:
+            p0x, p0y = coordinate(results, 0, 0), coordinate(results, 0, 1)
 
+            p7x, p7y = coordinate(results, 7, 0), coordinate(results, 7, 1)
+            d07 = dist([p0x, p0y], [p7x, p7y])
 
-def main():
-    cap = cv2.VideoCapture(0)
+            p8x, p8y = coordinate(results, 8, 0), coordinate(results, 8, 1)
+            d08 = dist([p0x, p0y], [p8x, p8y])
 
-    while cap.isOpened():
-        success,image = cap.read()
-        image = cv2.flip(image,1)
-        
-        imageRGB = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=imageRGB)
+            p11x, p11y = coordinate(results, 11, 0), coordinate(results, 11, 1)
+            d011 = dist([p0x, p0y], [p11x, p11y])
 
+            p12x, p12y = coordinate(results, 12, 0), coordinate(results, 12, 1)
+            d012 = dist([p0x, p0y], [p12x, p12y])
 
-        with GestureRecognizer.create_from_options(options) as recognizer:
-            recognizer.recognize_async(mp_image, 5)
+            p15x, p15y = coordinate(results, 15, 0), coordinate(results, 15, 1)
+            d015 = dist([p0x, p0y], [p15x, p15y])
 
+            p16x, p16y = coordinate(results, 16, 0), coordinate(results, 16, 1)
+            d016 = dist([p0x, p0y], [p16x, p16y])
 
-        cv2.imshow("Video",image)
-        cv2.waitKey(1)
-if __name__ == "__main__":
-    main()
+            p19x, p19y = coordinate(results, 19, 0), coordinate(results, 19, 1)
+            d019 = dist([p0x, p0y], [p19x, p19y])
+
+            p20x, p20y = coordinate(results, 20, 0), coordinate(results, 20, 1)
+            d020 = dist([p0x, p0y], [p20x, p20y])
+
+            return d07 > d08 and d011 > d012 and d015 > d016 and d019 > d020
+                    
+        except:
+           pass
+

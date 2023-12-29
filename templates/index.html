@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwipeWrite</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+    <img id="video_feed" src="" alt="Video Feed" style="width: 300px; height: auto; position: absolute; top: 10px; right: 10px;">
+    <div class="controls">
+        <input type="color" id="colorPicker" value="#000000">
+        <button id="penButton">Pen</button>
+        <button id="eraserButton">Eraser</button>
+        <p id="mode"></p>
+    </div>
+    <canvas id="paintCanvas"></canvas>
+
+    <script>
+        const socket = io.connect('http://127.0.0.1:5000');
+
+        const canvas = document.getElementById("paintCanvas");
+        const ctx = canvas.getContext("2d");
+        const colorPicker = document.getElementById("colorPicker");
+        const penButton = document.getElementById("penButton");
+        const eraserButton = document.getElementById("eraserButton");
+       
+        let isDrawing = false;
+        let isErasing = false;
+        let isDrawingRectangle = false;
+        let isDrawingCircle = false;
+        let lastX = 0;
+        let lastY = 0;
+        let newX = 0;
+        let newY = 0;
+
+        // Handle incoming video frames
+        socket.on('video_frame', function(data) {
+            const img = document.getElementById('video_feed');
+            img.src = 'data:image/jpeg;base64,' + data.image;
+
+            isDrawing = data.draw;
+
+            if (data.draw) {
+                document.getElementById("mode").innerHTML = "Drawing Mode";
+            } else if (isErasing) {
+                document.getElementById("mode").innerHTML = "Erasing Mode";
+            } else {
+                document.getElementById("mode").innerHTML = "Standby Mode";
+            }
+
+            if (data.coordinates != [0, 0]) [newX, newY] = data.coordinates;
+
+            if (newX != 0 || newY != 0) {
+                newX = parseInt(window.innerWidth * newX);
+                newY = parseInt(window.innerHeight * newY);
+            }
+
+            draw();
+            [lastX, lastY] = [newX, newY];
+        });
+
+        canvas.width = window.innerWidth - 20;
+        canvas.height = window.innerHeight - 150;
+
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("mouseup", stopDrawing);
+        canvas.addEventListener("mouseout", stopDrawing);
+
+        penButton.addEventListener("click", setDrawingTool);
+        eraserButton.addEventListener("click", setEraserTool);
+        rectangleButton.addEventListener("click", setRectangleTool);
+        circleButton.addEventListener("click", setCircleTool);
+
+        colorPicker.addEventListener("input", updateColor);
+
+        function startDrawing(e) {
+            if (isErasing) {
+                // Start erasing
+                isErasing = true;
+                ctx.clearRect(e.offsetX - 10, e.offsetY - 10, 20, 20);
+            } else {
+                // Start drawing
+                isDrawing = true;
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing && !isErasing) return;
+
+            ctx.lineWidth = 7;
+            ctx.lineCap = "round";
+
+            if (isErasing) {
+                ctx.clearRect(lastX - 40, lastY - 40, 50, 50);
+            } else if (isDrawingRectangle) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeRect(lastX, lastY, e.offsetX - lastX, e.offsetY - lastY);
+            } else if (isDrawingCircle) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const radius = Math.sqrt(Math.pow(e.offsetX - lastX, 2) + Math.pow(e.offsetY - lastY, 2));
+                ctx.beginPath();
+                ctx.arc(lastX, lastY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(newX, newY);
+                ctx.stroke();
+            }
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            isErasing = false;
+        }
+
+        function setDrawingTool() {
+            isErasing = false;
+            isDrawingRectangle = false;
+            isDrawingCircle = false;
+            canvas.style.cursor = "crosshair";
+        }
+
+        function setEraserTool() {
+            isErasing = true;
+            isDrawingRectangle = false;
+            isDrawingCircle = false;
+            canvas.style.cursor = "url('eraser.png'), auto";
+        }
+
+        function setRectangleTool() {
+            isErasing = false;
+            isDrawingRectangle = true;
+            isDrawingCircle = false;
+            canvas.style.cursor = "crosshair";
+        }
+
+        function setCircleTool() {
+            isErasing = false;
+            isDrawingRectangle = false;
+            isDrawingCircle = true;
+            canvas.style.cursor = "crosshair";
+        }
+
+        function updateColor() {
+            ctx.strokeStyle = colorPicker.value;
+            ctx.fillStyle = colorPicker.value;
+        }
+    </script>
+</body>
+</html>
