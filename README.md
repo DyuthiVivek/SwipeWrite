@@ -1,4 +1,3 @@
-# swipe-write
 ## SwipeWrite
 
 ## Description
@@ -21,4 +20,3 @@ Closed fist to go into drawing mode. Write with pointed tip of index finger. A c
 2. Gesture recognition using hand coordinates 
 3. Making a simple whiteboard application
 4. Using real time video feed to draw 
-
